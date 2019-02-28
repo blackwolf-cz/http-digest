@@ -28,13 +28,20 @@ Installation
 Usage
 ---
 
-Create the `HttpDigest` service to create and verify digests. Give the negatiation string for supported algorithms.
-This value should be similar to a `Want-Digest` header.
+Create the `HttpDigest` service to create and verify digests. Give the server priorities for supported algorithms. This
+value should be similar to those in the `Want-Digest` header.
 
 ```php
-use Jasny/HttpDigest/HttpDigest;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+```
+
+The priorities may also be specified as string.
+
+```php
+$service = HttpDigest(new DigestNegotiator(), "MD5;q=0.3, SHA;q=1");
 ```
 
 ### Creating a digest
@@ -50,9 +57,25 @@ $digest = $service->create($body);
 You can use the service to verify the digest.
 
 ```php
-if (!$service->check($body, $digest)) {
-  // ...
-}
+$service->verify($body, $digest);
+```
+
+If the digest doesn't match or if the algorithm is unsupported, a `HttpDigestException` is thrown.
+
+### Priorities and the `Want-Digest` header
+
+You can change the priorities using `withPriorities()`. This will create a new copy of the service.
+
+```php
+$newService = $service->withPriorities(["MD5;q=0.3", "SHA;q=0.5", "SHA-256;q=1"]);
+```
+
+To get the configured priorities use `getPriorities()`. The `getWantDigest()` function returns the priorities in as a
+string in the format expected for `Wanted-Digest`.
+
+```php
+$priorities = $service->getPriorities();
+$header = $service->getWantDigest();
 ```
 
 ### Server middleware
@@ -72,12 +95,13 @@ You're required to supply a [PSR-17 response factory](https://www.php-fig.org/ps
 to create a `400 Bad Request` response for requests with invalid signatures.
 
 ```php
-use LTO\HttpDigest\HttpDigest;
-use LTO\HttpDigest\ServerMiddleware;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\ServerMiddleware;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 use Zend\Stratigility\MiddlewarePipe;
 use Zend\Diactoros\ResponseFactory;
 
-$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
 $responseFactory = new ResponseFactory();
 $middleware = new ServerMiddleware($service, $responseFactory);
 
@@ -97,11 +121,12 @@ To get a callback to be used by libraries as [Jasny Router](https://github.com/j
 [Relay](http://relayphp.com/), use the `asDoublePass()` method.
 
 ```php
-use LTO\HttpDigest\HttpDigest;
-use LTO\HttpDigest\ServerMiddleware;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\ServerMiddleware;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 use Relay\RelayBuilder;
 
-$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ServerMiddleware($service);
 
 $relayBuilder = new RelayBuilder($resolver);
@@ -118,10 +143,11 @@ Client middleware can be used to sign requests send by PSR-7 compatible HTTP cli
 [Guzzle](http://docs.guzzlephp.org) and [HTTPlug](http://docs.php-http.org).
 
 ```php
-use LTO\HttpDigest\HttpDigest;
-use LTO\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 ```
 
@@ -158,10 +184,11 @@ that creates a callback which can be used as Guzzle middleware.
 ```php
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Client;
-use LTO\HttpDigest\HttpDigest;
-use LTO\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 
 $stack = new HandlerStack();
@@ -180,10 +207,11 @@ The `forHttplug()` method for the middleware creates an object that can be used 
 ```php
 use Http\Discovery\HttpClientDiscovery;
 use Http\Client\Common\PluginClient;
-use LTO\HttpDigest\HttpDigest;
-use LTO\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\HttpDigest;
+use Jasny\HttpDigest\ClientMiddleware;
+use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 
 $pluginClient = new PluginClient(
