@@ -17,7 +17,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 
 /**
  * @covers \Jasny\HttpDigest\ClientMiddleware
@@ -25,6 +24,8 @@ use Psr\Http\Message\StreamInterface;
 class ClientMiddlewareTest extends TestCase
 {
     use TestHelper;
+    use MethodProviderTrait;
+    use MockRequestTrait;
 
     /**
      * @var HttpDigest&MockObject
@@ -41,49 +42,6 @@ class ClientMiddlewareTest extends TestCase
     {
         $this->service = $this->createMock(HttpDigest::class);
         $this->middleware = new ClientMiddleware($this->service);
-    }
-
-    /**
-     * Create a mock digest request.
-     *
-     * @param string $method
-     * @param string $contents
-     * @return RequestInterface&MockObject
-     */
-    protected function createMockRequest(string $method, ?string $contents = null): RequestInterface
-    {
-        $body = $this->createMock(StreamInterface::class);
-        $body->expects($this->any())->method('getContents')->willReturn($contents);
-        $body->expects($this->any())->method('getSize')->willReturn(strlen($contents));
-
-        $request = $this->createMock(RequestInterface::class);
-        $request->expects($this->any())->method('getMethod')->willReturn($method);
-        $request->expects($this->any())->method('getBody')->willReturn($body);
-
-        return $request;
-    }
-
-
-    public function digestMethodProvider()
-    {
-        return [
-            ['POST'],
-            ['PUT'],
-            ['PATCH'],
-            ['DELETE'],
-            ['CUSTOM'],
-        ];
-    }
-
-
-    public function noDigestMethodProvider()
-    {
-        return [
-            ['GET'],
-            ['HEAD'],
-            ['DELETE'],
-            ['CUSTOM'],
-        ];
     }
 
     /**

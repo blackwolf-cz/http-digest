@@ -142,7 +142,7 @@ class HttpDigest
      */
     public function verify(string $body, string $digest): void
     {
-        [$algo, $hash64] = explode('=', $digest,2) + [1 => ''];
+        [$algo, $hash64] = explode('=', $digest, 2) + [1 => ''];
 
         if ($this->negotiator->getBest($algo, $this->priorities) === null) {
             throw new HttpDigestException('Unsupported digest hashing algorithm: '. $algo);
