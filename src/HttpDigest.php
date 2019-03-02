@@ -7,6 +7,7 @@ use const Improved\FUNCTION_ARGUMENT_PLACEHOLDER as __;
 
 use Improved\IteratorPipeline\Pipeline;
 use Jasny\HttpDigest\Negotiation\DigestNegotiator;
+use Jasny\HttpDigest\Negotiation\WantDigest;
 
 /**
  * Create and verify HTTP Digests.
@@ -52,7 +53,8 @@ class HttpDigest
      */
     public function withPriorities($priorities)
     {
-        $supportedPriorities = $this->getSupportedPriorities($priorities);;
+        $supportedPriorities = $this->getSupportedPriorities($priorities);
+        ;
 
         if ($this->priorities === $supportedPriorities) {
             return $this;
@@ -67,7 +69,7 @@ class HttpDigest
     /**
      * Get the priorities.
      *
-     * @return string
+     * @return string[]
      */
     public function getPriorities(): array
     {
@@ -99,8 +101,10 @@ class HttpDigest
             ->map(i\function_partial('trim', __))
             ->map(i\function_partial('explode', ';', __, 2))
             ->column(1, 0)
-            ->mapKeys(function($_, string $algo) { return strtoupper($algo); })
-            ->filter(function($_, string $algo) {
+            ->mapKeys(function ($_, string $algo) {
+                return strtoupper($algo);
+            })
+            ->filter(function ($_, string $algo) {
                 return array_key_exists($algo, self::ALGOS);
             })
             ->sortKeys(SORT_STRING)
@@ -126,7 +130,9 @@ class HttpDigest
      */
     public function create(string $body): string
     {
-        $algo = strtoupper($this->negotiator->getBest('*', $this->priorities)->getValue());
+        /** @var WantDigest $best */
+        $best = $this->negotiator->getBest('*', $this->priorities);
+        $algo = strtoupper($best->getValue());
 
         $hash = hash(self::ALGOS[$algo], $body, true);
 

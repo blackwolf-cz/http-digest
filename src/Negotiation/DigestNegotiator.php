@@ -10,7 +10,8 @@ use Negotiation\AbstractNegotiator;
 class DigestNegotiator extends AbstractNegotiator
 {
     /**
-     * {@inheritdoc}
+     * @param string $accept
+     * @return WantDigest
      */
     protected function acceptFactory($accept)
     {

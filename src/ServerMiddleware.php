@@ -151,13 +151,13 @@ class ServerMiddleware implements MiddlewareInterface
     /**
      * Create a `401 Unauthorized` response.
      *
-     * @param ServerRequest $request
      * @param Response|null $response
      * @param string        $message
      * @return Response
      * @throws \RuntimeException when can't write body.
      */
-    protected function createBadRequestResponse(?Response $response, string $message): Response {
+    protected function createBadRequestResponse(?Response $response, string $message): Response
+    {
         $newResponse = $response === null
             ? $this->createResponse(400)
             : $response->withStatus(400)->withBody(clone $response->getBody());
