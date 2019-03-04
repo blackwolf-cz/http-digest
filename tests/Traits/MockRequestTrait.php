@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Jasny\HttpDigest\Tests;
+namespace Jasny\HttpDigest\Tests\Traits;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
@@ -10,8 +10,8 @@ trait MockRequestTrait
     /**
      * Create a mock digest request.
      *
-     * @param string      $method
-     * @param string|null $contents
+     * @param string $method
+     * @param string $contents
      * @return RequestInterface&MockObject
      */
     protected function createMockRequest(string $method, string $contents = ''): ServerRequestInterface

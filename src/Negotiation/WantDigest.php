@@ -10,4 +10,11 @@ use Negotiation\AcceptHeader;
  */
 final class WantDigest extends BaseAccept implements AcceptHeader
 {
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return strtoupper(parent::getType());
+    }
 }

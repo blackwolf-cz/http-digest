@@ -19,8 +19,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 class ServerMiddlewareTest extends TestCase
 {
     use TestHelper;
-    use MethodProviderTrait;
-    use MockRequestTrait;
+    use Traits\MethodProviderTrait;
+    use Traits\MockRequestTrait;
 
     /**
      * @var HttpDigest&MockObject
@@ -134,6 +134,42 @@ class ServerMiddlewareTest extends TestCase
     }
 
     /**
+     * @dataProvider alwaysDigestMethodProvider
+     */
+    public function testProcessWithMissingDigest(string $method)
+    {
+        $request = $this->createMockRequest($method);
+        $request->expects($this->any())->method('hasHeader')->with('Digest')->willReturn(false);
+        $request->expects($this->never())->method('getHeaderLine');
+
+        $badResponseBody = $this->createMock(StreamInterface::class);
+        $badResponseBody->expects($this->once())->method('write')->with('digest header missing');
+
+        $badResponse = $this->createMock(ResponseInterface::class);
+        $badResponse->expects($this->exactly(2))->method('withHeader')
+            ->withConsecutive(
+                ['Want-Digest', 'MD5;q=0.3, SHA;q=0.5, SHA-256'],
+                ['Content-Type', 'text/plain']
+            )
+            ->willReturnSelf();
+        $badResponse->expects($this->once())->method('getBody')->willReturn($badResponseBody);
+
+        $this->responseFactory->expects($this->once())->method('createResponse')
+            ->with(400)->willReturn($badResponse);
+
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects($this->never())->method('handle');
+
+        $this->service->expects($this->never())->method('verify');
+        $this->service->expects($this->once())->method('getWantDigest')
+            ->willReturn('MD5;q=0.3, SHA;q=0.5, SHA-256');
+
+        $ret = $this->middleware->process($request, $handler);
+
+        $this->assertSame($badResponse, $ret);
+    }
+
+    /**
      * @expectedException \BadMethodCallException
      * @expectedExceptionMessage Response factory not set
      */
@@ -186,8 +222,11 @@ class ServerMiddlewareTest extends TestCase
         $this->assertSame($response, $ret);
     }
 
-    public function testAsDoublePassMiddlewareWithInvalidDigest()
+    public function testAsDoublePassMiddlewareWithInvalidDigestWithoutFactory()
     {
+        $this->middleware = new ServerMiddleware($this->service);
+        $this->responseFactory->expects($this->never())->method('createResponse');
+
         $request = $this->createMockRequest('POST', 'hello');
         $request->expects($this->any())->method('hasHeader')->with('Digest')->willReturn(true);
         $request->expects($this->atLeastOnce())->method('getHeaderLine')
@@ -213,14 +252,95 @@ class ServerMiddlewareTest extends TestCase
         $response->expects($this->any())->method('getBody')->willReturn($responseBody);
         $response->expects($this->once())->method('withBody')->willReturn($badResponse);
 
-        // Double pass doesn't use response factory
-        $this->responseFactory->expects($this->never())->method('createResponse');
+        $next = $this->createCallbackMock($this->never());
+
+        $this->service->expects($this->once())->method('verify')
+            ->with('hello', 'MD5=CY9rzUYh03PK3k6DJie09g==')
+            ->willThrowException(new HttpDigestException('invalid digest'));
+        $this->service->expects($this->once())->method('getWantDigest')
+            ->willReturn('MD5;q=0.3, SHA;q=0.5, SHA-256');
+
+        $doublePass = $this->middleware->asDoublePass();
+        $ret = $doublePass($request, $response, $next);
+
+        $this->assertSame($badResponse, $ret);
+    }
+
+    public function testAsDoublePassMiddlewareWithInvalidDigestWithFactory()
+    {
+        $request = $this->createMockRequest('POST', 'hello');
+        $request->expects($this->any())->method('hasHeader')->with('Digest')->willReturn(true);
+        $request->expects($this->atLeastOnce())->method('getHeaderLine')
+            ->with('Digest')
+            ->willReturn('MD5=CY9rzUYh03PK3k6DJie09g==');
+
+        $badResponseBody = $this->createMock(StreamInterface::class);
+        $badResponseBody->expects($this->once())->method('write')->with('invalid digest');
+
+        $badResponse = $this->createMock(ResponseInterface::class);
+        $badResponse->expects($this->exactly(2))->method('withHeader')
+            ->withConsecutive(
+                ['Want-Digest', 'MD5;q=0.3, SHA;q=0.5, SHA-256'],
+                ['Content-Type', 'text/plain']
+            )
+            ->willReturnSelf();
+        $badResponse->expects($this->once())->method('getBody')->willReturn($badResponseBody);
+
+        $response = $this->createMock(ResponseInterface::class);
+        $response->expects($this->never())->method('withStatus');
+        $response->expects($this->never())->method('withBody');
+
+        $this->responseFactory->expects($this->once())->method('createResponse')
+            ->with(400)->willReturn($badResponse);
 
         $next = $this->createCallbackMock($this->never());
 
         $this->service->expects($this->once())->method('verify')
             ->with('hello', 'MD5=CY9rzUYh03PK3k6DJie09g==')
             ->willThrowException(new HttpDigestException('invalid digest'));
+        $this->service->expects($this->once())->method('getWantDigest')
+            ->willReturn('MD5;q=0.3, SHA;q=0.5, SHA-256');
+
+        $doublePass = $this->middleware->asDoublePass();
+        $ret = $doublePass($request, $response, $next);
+
+        $this->assertSame($badResponse, $ret);
+    }
+
+    /**
+     * @dataProvider alwaysDigestMethodProvider
+     */
+    public function testAsDoublePassWithMissingDigest(string $method)
+    {
+        $this->middleware = new ServerMiddleware($this->service);
+        $this->responseFactory->expects($this->never())->method('createResponse');
+
+        $request = $this->createMockRequest($method);
+        $request->expects($this->any())->method('hasHeader')->with('Digest')->willReturn(false);
+        $request->expects($this->never())->method('getHeaderLine');
+
+        $badResponseBody = $this->createMock(StreamInterface::class);
+        $badResponseBody->expects($this->once())->method('write')->with('digest header missing');
+
+        $badResponse = $this->createMock(ResponseInterface::class);
+        $badResponse->expects($this->exactly(2))->method('withHeader')
+            ->withConsecutive(
+                ['Want-Digest', 'MD5;q=0.3, SHA;q=0.5, SHA-256'],
+                ['Content-Type', 'text/plain']
+            )
+            ->willReturnSelf();
+        $badResponse->expects($this->once())->method('getBody')->willReturn($badResponseBody);
+
+        $responseBody = $this->createMock(StreamInterface::class);
+
+        $response = $this->createMock(ResponseInterface::class);
+        $response->expects($this->once())->method('withStatus')->with(400)->willReturnSelf();
+        $response->expects($this->any())->method('getBody')->willReturn($responseBody);
+        $response->expects($this->once())->method('withBody')->willReturn($badResponse);
+
+        $next = $this->createCallbackMock($this->never());
+
+        $this->service->expects($this->never())->method('verify');
         $this->service->expects($this->once())->method('getWantDigest')
             ->willReturn('MD5;q=0.3, SHA;q=0.5, SHA-256');
 

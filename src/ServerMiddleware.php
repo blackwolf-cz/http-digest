@@ -127,7 +127,7 @@ class ServerMiddleware implements MiddlewareInterface
     protected function handleNoDigestRequest(ServerRequest $request, ?Response $response, callable $next): Response
     {
         if ($this->shouldHaveDigest($request)) {
-            return $this->createBadRequestResponse($response, 'Digest header missing');
+            return $this->createBadRequestResponse($response, 'digest header missing');
         }
 
         return $next($request, $response);
@@ -136,20 +136,23 @@ class ServerMiddleware implements MiddlewareInterface
     /**
      * Create a response using the response factory.
      *
-     * @param int $status  Response status
+     * @param int           $status            Response status
+     * @param Response|null $originalResponse
      * @return Response
      */
-    protected function createResponse(int $status): Response
+    protected function createResponse(int $status, ?Response $originalResponse = null): Response
     {
-        if ($this->responseFactory === null) {
+        if ($this->responseFactory === null && $originalResponse === null) {
             throw new \BadMethodCallException('Response factory not set');
         }
 
-        return $this->responseFactory->createResponse($status);
+        return $this->responseFactory !== null
+            ? $this->responseFactory->createResponse($status)
+            : $originalResponse->withStatus($status)->withBody(clone $originalResponse->getBody());
     }
 
     /**
-     * Create a `401 Unauthorized` response.
+     * Create a `400 Bad Request` response.
      *
      * @param Response|null $response
      * @param string        $message
@@ -158,11 +161,7 @@ class ServerMiddleware implements MiddlewareInterface
      */
     protected function createBadRequestResponse(?Response $response, string $message): Response
     {
-        $newResponse = $response === null
-            ? $this->createResponse(400)
-            : $response->withStatus(400)->withBody(clone $response->getBody());
-
-        $errorResponse = $newResponse
+        $errorResponse = $this->createResponse(400, $response)
             ->withHeader('Want-Digest', $this->service->getWantDigest())
             ->withHeader('Content-Type', 'text/plain');
 

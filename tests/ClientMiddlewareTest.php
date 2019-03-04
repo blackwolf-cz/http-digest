@@ -24,8 +24,8 @@ use Psr\Http\Message\ResponseInterface;
 class ClientMiddlewareTest extends TestCase
 {
     use TestHelper;
-    use MethodProviderTrait;
-    use MockRequestTrait;
+    use Traits\MethodProviderTrait;
+    use Traits\MockRequestTrait;
 
     /**
      * @var HttpDigest&MockObject
