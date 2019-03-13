@@ -25,6 +25,11 @@ class ServerMiddleware implements MiddlewareInterface
     protected $responseFactory;
 
     /**
+     * @var bool
+     */
+    protected $optional = false;
+
+    /**
      * Class constructor.
      *
      * @param HttpDigest        $service
@@ -36,6 +41,23 @@ class ServerMiddleware implements MiddlewareInterface
         $this->responseFactory = $responseFactory;
     }
 
+    /**
+     * Never require a Digest header, even for POST, etc requests.
+     *
+     * @param bool $optional
+     * @return static
+     */
+    public function withOptionalDigest(bool $optional = true)
+    {
+        if ($this->optional === $optional) {
+            return $this;
+        }
+
+        $clone = clone $this;
+        $clone->optional = $optional;
+
+        return $clone;
+    }
 
     /**
      * Process an incoming server request (PSR-15).
@@ -126,7 +148,7 @@ class ServerMiddleware implements MiddlewareInterface
      */
     protected function handleNoDigestRequest(ServerRequest $request, ?Response $response, callable $next): Response
     {
-        if ($this->shouldHaveDigest($request)) {
+        if (!$this->optional && $this->shouldHaveDigest($request)) {
             return $this->createBadRequestResponse($response, 'digest header missing');
         }
 

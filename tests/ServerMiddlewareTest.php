@@ -170,6 +170,31 @@ class ServerMiddlewareTest extends TestCase
     }
 
     /**
+     * @dataProvider alwaysDigestMethodProvider
+     */
+    public function testProcessWithOptionalDigest(string $method)
+    {
+        $this->middleware = $this->middleware->withOptionalDigest();
+
+        $request = $this->createMockRequest($method);
+        $request->expects($this->any())->method('hasHeader')->with('Digest')->willReturn(false);
+        $request->expects($this->never())->method('getHeaderLine');
+
+        $response = $this->createMock(ResponseInterface::class);
+
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects($this->once())->method('handle')
+            ->with($this->identicalTo($request))
+            ->willReturn($response);
+
+        $this->service->expects($this->never())->method('verify');
+
+        $ret = $this->middleware->process($request, $handler);
+
+        $this->assertSame($response, $ret);
+    }
+
+    /**
      * @expectedException \BadMethodCallException
      * @expectedExceptionMessage Response factory not set
      */
@@ -348,5 +373,15 @@ class ServerMiddlewareTest extends TestCase
         $ret = $doublePass($request, $response, $next);
 
         $this->assertSame($badResponse, $ret);
+    }
+
+    public function testWithOptional()
+    {
+        $optionalMiddleware = $this->middleware->withOptionalDigest();
+        $this->assertNotSame($optionalMiddleware, $this->middleware->withOptionalDigest());
+
+        $this->assertSame($optionalMiddleware, $optionalMiddleware->withOptionalDigest());
+
+        $this->assertNotSame($optionalMiddleware, $optionalMiddleware->withOptionalDigest(false));
     }
 }
