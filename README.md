@@ -33,15 +33,23 @@ value should be similar to those in the `Want-Digest` header.
 
 ```php
 use Jasny\HttpDigest\HttpDigest;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 ```
 
 The priorities may also be specified as string.
 
 ```php
-$service = HttpDigest(new DigestNegotiator(), "MD5;q=0.3, SHA;q=1");
+$service = new HttpDigest("MD5;q=0.3, SHA;q=1");
+```
+
+The service for content negotiating may be created and passes in the constructor for proper DI.
+
+```php
+use Jasny\HttpDigest\HttpDigest;
+
+$negotiator = new DigestNegotiator();
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"], $negotiator);
 ```
 
 ### Creating a digest
@@ -97,11 +105,10 @@ to create a `400 Bad Request` response for requests with invalid signatures.
 ```php
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\ServerMiddleware;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 use Zend\Stratigility\MiddlewarePipe;
 use Zend\Diactoros\ResponseFactory;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 $responseFactory = new ResponseFactory();
 $middleware = new ServerMiddleware($service, $responseFactory);
 
@@ -123,10 +130,9 @@ To get a callback to be used by libraries as [Jasny Router](https://github.com/j
 ```php
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\ServerMiddleware;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 use Relay\RelayBuilder;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ServerMiddleware($service);
 
 $relayBuilder = new RelayBuilder($resolver);
@@ -145,9 +151,8 @@ Client middleware can be used to sign requests send by PSR-7 compatible HTTP cli
 ```php
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\ClientMiddleware;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 ```
 
@@ -186,9 +191,8 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Client;
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\ClientMiddleware;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 
 $stack = new HandlerStack();
@@ -209,9 +213,8 @@ use Http\Discovery\HttpClientDiscovery;
 use Http\Client\Common\PluginClient;
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\ClientMiddleware;
-use Jasny\HttpDigest\Negotiation\DigestNegotiator;
 
-$service = HttpDigest(new DigestNegotiator(), ["MD5;q=0.3", "SHA;q=1"]);
+$service = new HttpDigest(["MD5;q=0.3", "SHA;q=1"]);
 $middleware = new ClientMiddleware($service);
 
 $pluginClient = new PluginClient(

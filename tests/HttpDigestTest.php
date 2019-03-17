@@ -37,7 +37,7 @@ class HttpDigestTest extends TestCase
      */
     public function testPriorities($base, $alt)
     {
-        $service = new HttpDigest($this->negotiator, $base);
+        $service = new HttpDigest($base, $this->negotiator);
 
         $this->assertEquals(['MD5;q=0.3', 'SHA;q=1'], $service->getPriorities());
         $this->assertEquals('MD5;q=0.3, SHA;q=1', $service->getWantDigest());
@@ -58,7 +58,7 @@ class HttpDigestTest extends TestCase
      */
     public function testPrioritiesNoSupportedInConstructor()
     {
-        new HttpDigest($this->negotiator, ['Foo;q=1', 'Bar;q=0.3']);
+        new HttpDigest(['Foo;q=1', 'Bar;q=0.3'], $this->negotiator);
     }
 
     /**
@@ -67,7 +67,7 @@ class HttpDigestTest extends TestCase
      */
     public function testPrioritiesNoSupportedInClone()
     {
-        $service = new HttpDigest($this->negotiator, ['MD5']);
+        $service = new HttpDigest('MD5', $this->negotiator);
         $service->withPriorities('Foo');
     }
 
@@ -92,7 +92,7 @@ class HttpDigestTest extends TestCase
     {
         $this->expectNegotiate($algo, $prios, '*');
 
-        $service = new HttpDigest($this->negotiator, $prios);
+        $service = new HttpDigest($prios, $this->negotiator);
         $digest = $service->create('test');
 
         $this->assertEquals($expected, $digest);
@@ -106,7 +106,7 @@ class HttpDigestTest extends TestCase
         $prios = ['MD5;q=0.3', 'SHA;q=0.5', 'SHA-256'];
         $this->expectNegotiate($algo, $prios);
 
-        $service = new HttpDigest($this->negotiator, $prios);
+        $service = new HttpDigest($prios, $this->negotiator);
         $service->verify('test', $digest);
 
         $this->assertTrue(true); // No exceptions
@@ -122,7 +122,7 @@ class HttpDigestTest extends TestCase
         $prios = ['MD5;q=0.3', 'SHA;q=0.5', 'SHA-256'];
         $this->expectNegotiate($algo, $prios);
 
-        $service = new HttpDigest($this->negotiator, $prios);
+        $service = new HttpDigest($prios, $this->negotiator);
         $service->verify('some content', $digest);
     }
 
@@ -137,7 +137,7 @@ class HttpDigestTest extends TestCase
         $prios = ['MD5;q=0.3', 'SHA;q=0.5', 'SHA-256'];
         $this->expectNegotiate('SHA-256', $prios);
 
-        $service = new HttpDigest($this->negotiator, $prios);
+        $service = new HttpDigest($prios, $this->negotiator);
         $service->verify('test', 'SHA-256=' . $hash);
     }
 
@@ -151,7 +151,7 @@ class HttpDigestTest extends TestCase
             ->with('MD5', ['SHA;q=0.5', 'SHA-256'])
             ->willReturn(null);
 
-        $service = new HttpDigest($this->negotiator, ['SHA-256', 'SHA;q=0.5']);
+        $service = new HttpDigest(['SHA-256', 'SHA;q=0.5'], $this->negotiator);
         $service->verify('test', 'MD5=CY9rzUYh03PK3k6DJie09g==');
     }
 

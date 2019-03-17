@@ -36,13 +36,13 @@ class HttpDigest
     /**
      * Class construction.
      *
+     * @param string|string[]  $priorities  RFC 7231 strings
      * @param DigestNegotiator $negotiator
-     * @param string|string[]    $priorities  RFC 7231 strings
      */
-    public function __construct(DigestNegotiator $negotiator, $priorities)
+    public function __construct($priorities, DigestNegotiator $negotiator = null)
     {
-        $this->negotiator = $negotiator;
         $this->priorities = $this->getSupportedPriorities($priorities);
+        $this->negotiator = $negotiator ?? new DigestNegotiator();
     }
 
     /**
