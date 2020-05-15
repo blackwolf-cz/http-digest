@@ -1,6 +1,6 @@
 {
     "name": "jasny/http-digest",
-    "description": "",
+    "description": "PSR-7 client and server middleware for HTTP Digest header creation and validation as described in RFC 3230",
     "license": "MIT",
     "type": "library",
     "authors": [
