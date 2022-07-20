@@ -12,7 +12,6 @@ use Http\Mock\Client as HttpMockClient;
 use Http\Client\Common\PluginClient as HttpPluginClient;
 use Jasny\HttpDigest\ClientMiddleware;
 use Jasny\HttpDigest\HttpDigest;
-use Jasny\TestHelper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
@@ -38,7 +37,7 @@ class ClientMiddlewareTest extends TestCase
     protected $middleware;
 
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->service = $this->createMock(HttpDigest::class);
         $this->middleware = new ClientMiddleware($this->service);

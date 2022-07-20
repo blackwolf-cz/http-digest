@@ -1,5 +1,5 @@
 {
-    "name": "jasny/http-digest",
+    "name": "blackwolf-cz/http-digest",
     "description": "PSR-7 client and server middleware for HTTP Digest header creation and validation as described in RFC 3230",
     "license": "MIT",
     "type": "library",
@@ -8,6 +8,10 @@
             "name": "Arnold Daniels",
             "email": "arnold@jasny.net",
             "homepage": "http://www.jasny.net"
+        },
+        {
+            "name": "Michal Kandr",
+            "homepage": "https://www.michalkandr.cz"
         }
     ],
     "support": {
@@ -20,13 +24,13 @@
         "psr/http-factory": "^1.0",
         "psr/http-message": "^1.0",
         "psr/http-server-middleware": "^1.0",
-        "willdurand/negotiation": "^2.3"
+        "willdurand/negotiation": "3.*"
     },
     "require-dev": {
-        "guzzlehttp/guzzle": "^6.3",
-        "jasny/php-code-quality": "^2.3",
-        "php-http/client-common": "^2.0",
-        "php-http/mock-client": "^1.3"
+        "phpunit/phpunit": "9.*",
+        "guzzlehttp/guzzle": "7.*",
+        "php-http/client-common": "2.*",
+        "php-http/mock-client": "1.*"
     },
     "autoload": {
         "psr-4": {
