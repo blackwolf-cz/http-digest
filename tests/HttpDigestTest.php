@@ -5,7 +5,7 @@ namespace Jasny\HttpDigest\Tests;
 use InvalidArgumentException;
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\Negotiation\DigestNegotiator;
-use Negotiation\AcceptHeader;
+use Negotiation\BaseAccept;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -19,7 +19,7 @@ class HttpDigestTest extends TestCase
      */
     protected $negotiator;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->negotiator = $this->createMock(DigestNegotiator::class);
     }
@@ -52,21 +52,17 @@ class HttpDigestTest extends TestCase
         $this->assertEquals('MD5;q=0.3, SHA;q=0.5, SHA-256', $newService->getWantDigest());
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage None of the algorithms specified in the priorities are supported
-     */
     public function testPrioritiesNoSupportedInConstructor()
     {
+        $this->expectException(InvalidArgumentException::class);
+        self::expectExceptionMessage('None of the algorithms specified in the priorities are supported');
         new HttpDigest(['Foo;q=1', 'Bar;q=0.3'], $this->negotiator);
     }
 
-    /**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage None of the algorithms specified in the priorities are supported
-     */
     public function testPrioritiesNoSupportedInClone()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("None of the algorithms specified in the priorities are supported");
         $service = new HttpDigest('MD5', $this->negotiator);
         $service->withPriorities('Foo');
     }
@@ -114,8 +110,6 @@ class HttpDigestTest extends TestCase
 
     /**
      * @dataProvider hashProvider
-     * @expectedException \Jasny\HttpDigest\HttpDigestException
-     * @expectedExceptionMessage Incorrect digest hash
      */
     public function testVerifyWithIncorrectDigest(string $digest, string $algo)
     {
@@ -123,13 +117,13 @@ class HttpDigestTest extends TestCase
         $this->expectNegotiate($algo, $prios);
 
         $service = new HttpDigest($prios, $this->negotiator);
+
+        $this->expectException(\Jasny\HttpDigest\HttpDigestException::class);
+        $this->expectExceptionMessage("Incorrect digest hash");
+
         $service->verify('some content', $digest);
     }
 
-    /**
-     * @expectedException \Jasny\HttpDigest\HttpDigestException
-     * @expectedExceptionMessage Corrupt digest hash
-     */
     public function testVerifyWithInvalidDigest()
     {
         $hash = hash('sha256', 'test', true); // Not base64 encoded
@@ -138,13 +132,13 @@ class HttpDigestTest extends TestCase
         $this->expectNegotiate('SHA-256', $prios);
 
         $service = new HttpDigest($prios, $this->negotiator);
+
+        $this->expectExceptionMessage("Corrupt digest hash");
+        $this->expectException(\Jasny\HttpDigest\HttpDigestException::class);
+
         $service->verify('test', 'SHA-256=' . $hash);
     }
 
-    /**
-     * @expectedException \Jasny\HttpDigest\HttpDigestException
-     * @expectedExceptionMessage Unsupported digest hashing algorithm: MD5
-     */
     public function testVerifyWithUnsupportedAlgorithm()
     {
         $this->negotiator->expects($this->once())->method('getBest')
@@ -152,6 +146,10 @@ class HttpDigestTest extends TestCase
             ->willReturn(null);
 
         $service = new HttpDigest(['SHA-256', 'SHA;q=0.5'], $this->negotiator);
+
+        $this->expectExceptionMessage("Unsupported digest hashing algorithm: MD5");
+        $this->expectException(\Jasny\HttpDigest\HttpDigestException::class);
+
         $service->verify('test', 'MD5=CY9rzUYh03PK3k6DJie09g==');
     }
 
@@ -165,7 +163,7 @@ class HttpDigestTest extends TestCase
      */
     protected function expectNegotiate(string $algo, array $prios, ?string $accept = null): void
     {
-        $best = $this->createPartialMock(AcceptHeader::class, ['getValue']);
+        $best = $this->createPartialMock(BaseAccept::class, ['getValue']);
         $best->expects($this->any())->method('getValue')->willReturn($algo);
 
         $this->negotiator->expects($this->once())->method('getBest')

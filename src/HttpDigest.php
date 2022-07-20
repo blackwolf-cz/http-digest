@@ -36,8 +36,8 @@ class HttpDigest
     /**
      * Class construction.
      *
-     * @param string|string[]  $priorities  RFC 7231 strings
-     * @param DigestNegotiator $negotiator
+     * @param string|string[] $priorities RFC 7231 strings
+     * @param DigestNegotiator|null $negotiator
      */
     public function __construct($priorities, DigestNegotiator $negotiator = null)
     {
@@ -54,7 +54,6 @@ class HttpDigest
     public function withPriorities($priorities)
     {
         $supportedPriorities = $this->getSupportedPriorities($priorities);
-        ;
 
         if ($this->priorities === $supportedPriorities) {
             return $this;

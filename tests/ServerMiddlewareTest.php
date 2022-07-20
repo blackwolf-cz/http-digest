@@ -2,7 +2,6 @@
 
 namespace Jasny\HttpDigest\Tests;
 
-use Jasny\TestHelper;
 use Jasny\HttpDigest\HttpDigest;
 use Jasny\HttpDigest\HttpDigestException;
 use Jasny\HttpDigest\ServerMiddleware;
@@ -38,7 +37,7 @@ class ServerMiddlewareTest extends TestCase
     protected $middleware;
 
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->service = $this->createMock(HttpDigest::class);
         $this->responseFactory = $this->createMock(ResponseFactoryInterface::class);
@@ -194,10 +193,6 @@ class ServerMiddlewareTest extends TestCase
         $this->assertSame($response, $ret);
     }
 
-    /**
-     * @expectedException \BadMethodCallException
-     * @expectedExceptionMessage Response factory not set
-     */
     public function testProcessWithoutResponseFactory()
     {
         $request = $this->createMockRequest('POST', 'hello');
@@ -214,6 +209,9 @@ class ServerMiddlewareTest extends TestCase
             ->willThrowException(new HttpDigestException('invalid digest'));
 
         $middleware = new ServerMiddleware($this->service); // No response factory
+
+        $this->expectException(\BadMethodCallException::class);
+        $this->expectExceptionMessage("Response factory not set");
 
         $middleware->process($request, $handler);
     }
